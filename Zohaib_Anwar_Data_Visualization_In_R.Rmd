@@ -1,0 +1,164 @@
+---
+title: "Untitled"
+author: "Zohaib Anwar"
+date: "August 12, 2017"
+output: html_document
+---
+
+---
+title: "Data Analysis"
+author: "Zohaib Anwar"
+date: "August 3, 2017"
+output: html_document
+---
+```{r}
+setwd("C:/USers/Zohaib/Desktop/Lectures/Udacity/R")
+Expenditure<-read.csv("Expenditure.csv",row.names=NULL)
+Contributions<-read.csv("ContributionsEdited.csv",header = TRUE,na.strings="",encoding="UTF-8")
+```
+
+
+```{r,message=FALSE}
+library(plyr)
+library(ggplot2)
+library(gridExtra)
+library(maps)
+library(ggmap)
+library(devtools)
+```
+
+```{r}
+for (i in c("cand_nm","election_tp")){print(sort(table(Contributions[i]),decreasing=TRUE))}
+Contributions$names<-lapply(as.character(Contributions$cand_nm),function(x) strsplit(x,",")[[1]][1])
+Contributions$names<-factor(Contributions$names,levels=sort(as.vector(as.character(unique((Contributions$names))))))
+```
+
+
+```{r, fig.width=15}
+plotCont<-subset(Contributions,election_tp=="P2016"|election_tp=="G2016")
+p1<-ggplot(aes(x=names,y=contb_receipt_amt,group=1),
+       data=plotCont)+
+  geom_bar(aes(fill='red'),stat="summary",fun.y=mean)+
+  facet_wrap(~election_tp,nrow = 2)+
+  geom_point(alpha=.5,size=.75,stat="summary",fun.y=median)+
+  geom_line(color='purple',stat="summary",fun.y=median)+
+  labs(x="Candidate Names",y="Mean Contribution Amount ($)")+
+  theme(plot.title = element_text(size=22))+
+  guides(fill=FALSE)
+p2<-ggplot(aes(x=names,y=contb_receipt_amt/1000000,group=1),
+           data=plotCont)+
+  ylab("Contribution Total ($ mil)")+
+  ggtitle("Contribution by Candidate")+
+  geom_line(size=1.25,color='steelblue',stat="summary",fun.y=sum)+
+  theme(axis.title.x=element_blank())+
+  facet_wrap(~election_tp,nrow=2)+
+  guides(fill=FALSE)
+grid.arrange(p2,p1)
+```
+
+```{r}
+ggplot(aes(x=contbr_occupation,y=contb_receipt_amt),
+       data=plotCont)+
+  geom_point(stat="summary",fun.y=mean)
+ggplot(aes(x=contbr_city,y=contb_receipt_amt),
+       data=plotCont)+
+  geom_point(stat="summary",fun.y=mean)
+```
+
+```{r}
+Contributions$Gender<-NA
+Contributions$Party<-NA
+Males=c("Rubio","Santorum","Perry","Carson","Cruz","Paul","Sanders","Huckabee",
+        "Pataki","O'Malley","Graham","Bush","Trump","Jindal","Christie",
+        "Walker","Webb","Kasich","Gilmore","Lessig","Johnson","McMullin")
+Females=c("Clinton","Fiorina","Stein")
+Republicans=c("Rubio","Santorum","Perry","Carson","Cruz","Fiorina","Paul","Huckabee",
+              "Pataki","O'Malley","Graham","Bush","Trump","Jindal","Christie",
+              "Walker","Kasich","Gilmore")
+Democrats=c("Clinton","Sanders","Webb","Lessig")
+Others=c("Stein","Johnson","McMullin")
+for (i in Contributions$names){
+  if (i %in% Males) {
+    Contributions$Gender="M"
+  }
+  else if (i %in% Females) {
+    Contributions$Gender="F"
+  }
+  else {
+    Contributions$Gender=NA}}
+for (i in Contributions$names){
+  if (i %in% Republicans){
+    Contributions$Party="R"
+  }
+  else if (i %in% Democrats) {
+    Contributions$Party="D"
+  }
+  else if (i %in% Others){
+    Contributions$Party="O"
+  }
+  else {
+    Contributions$Party=NA
+  }}
+```
+
+```{r}
+for (i in unique(Contributions$gender)){
+  print(c(i,quantile(x=Contributions[Contributions$gender==i,]$contb_receipt_amt,probs = .85)))
+  }
+for (i in unique(Contributions$party)){
+  print(c(i,quantile(Contributions[Contributions$party==i,]$contb_receipt_amt,probs = .85)))
+}
+ggplot(aes(x=gender,y=contb_receipt_amt),data=plotCont)+
+  geom_boxplot(aes(alpha=.1))+
+  coord_cartesian(ylim=c(quantile(Contributions[Contributions$gender=="F",]$contb_receipt_amt,probs = .25),
+                         quantile(Contributions[Contributions$gender=="F",]$contb_receipt_amt,probs = .95)))+
+  guides(fill=FALSE)
+ggplot(aes(x=party,y=contb_receipt_amt),data=plotCont)+
+  geom_boxplot(aes(alpha=.1))+
+  coord_cartesian(ylim=c(quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.25),
+                         quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.95)))+
+  guides(fill=FALSE)
+```
+
+
+```{r, message=FALSE}
+namelist<-unique(Contributions$names)
+variable_list<-c()
+for (i in namelist){
+  assign(i,
+         arrange(ddply(plotCont[plotCont$names==i,],.(names),
+                       summarize,count=count(contbr_city))$count,desc(freq)))
+  i<-get(i)
+  variable_list<-c(variable_list,i)
+  print(head(i,n = 10))
+  }
+```
+
+```{r,message=FALSE}
+for (i in namelist){a<-get(i)
+                 a$lat<- lapply(as.character(a$x),
+                                        function(x)
+                                          if (!is.na(x)){
+                                            geocode(x,source ="dsk",messaging = FALSE)$lat}
+                                        else {NA})
+                 a$lon<- lapply(as.character(a$x),
+                                       function(x) 
+                                         if (!is.na(x)){
+                                           geocode(x,source ="dsk",messaging=FALSE)$lon}
+                                       else {NA})
+                 assign(i,a)
+                 remove(a)
+}
+```
+
+```{r}
+for (i in namelist){
+  map("world", fill=TRUE, col="white", bg="lightblue", ylim=c(-60, 90), mar=c(0,0,0,0))
+  points(x=get(i)$lon,y=get(i)$lat,col="red")}
+```
+```{r}
+for (i in namelist){
+  ggplot()+borders("world",colour="gray50",fill="gray50")+
+    geom_point(data=get(i),mapping=aes(x=unlist(lon),unlist(lat),col='blue'))
+}
+```
