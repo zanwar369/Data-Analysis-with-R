@@ -25,6 +25,7 @@ library(gridExtra)
 library(maps)
 library(ggmap)
 library(devtools)
+library(dplyr)
 ```
 
 ```{r}
@@ -123,28 +124,29 @@ ggplot(aes(x=party,y=contb_receipt_amt),data=plotCont)+
 
 ```{r, message=FALSE}
 namelist<-unique(Contributions$names)
-variable_list<-c()
 for (i in namelist){
-  assign(i,
-         arrange(ddply(plotCont[plotCont$names==i,],.(names),
-                       summarize,count=count(contbr_city))$count,desc(freq)))
-  i<-get(i)
-  variable_list<-c(variable_list,i)
+  assign(i,subset(plotCont,names==i)%>%
+    group_by(names,contbr_city,contbr_st) %>%
+    summarize(n=n()) %>%
+    ungroup() %>%
+    ungroup())
+  i<-arrange(get(i),desc(n))
   print(head(i,n = 10))
-  }
+}
 ```
 
 ```{r,message=FALSE}
 for (i in namelist){a<-get(i)
-                 a$lat<- lapply(as.character(a$x),
+                 a$location<-paste(as.character(a$city),as.character(a$contbr_city))
+                 a$lat<- sapply(a$location,
                                         function(x)
                                           if (!is.na(x)){
                                             geocode(x,source ="dsk",messaging = FALSE)$lat}
                                         else {NA})
-                 a$lon<- lapply(as.character(a$x),
+                 a$lon<- sapply(a$location,
                                        function(x) 
                                          if (!is.na(x)){
-                                           geocode(x,source ="dsk",messaging=FALSE)$lon}
+                                           geocode(x,source ="dsk",messaging = FALSE)$lon}
                                        else {NA})
                  assign(i,a)
                  remove(a)
@@ -158,7 +160,8 @@ for (i in namelist){
 ```
 ```{r}
 for (i in namelist){
-  ggplot()+borders("world",colour="gray50",fill="gray50")+
-    geom_point(data=get(i),mapping=aes(x=unlist(lon),unlist(lat),col='blue'))
+  print(ggplot()+borders("world",colour="gray50",fill="gray50")+
+          geom_point(data=get(i),mapping=aes(x=lon,y=lat),col='blue')
+        )
 }
 ```
