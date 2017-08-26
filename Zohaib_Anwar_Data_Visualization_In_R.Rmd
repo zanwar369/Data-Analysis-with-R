@@ -9,8 +9,10 @@ output: html_document
 In this study I look at data from the 2016 Presidential election by candidate, total contributions, location of, and number of contributors. For each of these variables I try to parse the data and create some visualizations that sum up the data well. I end up creating a statististical summary with bar and line plots, overview of the data by plotting, on a world map, some of the aforementioned varibles, and a general box plot to differentiate between gender and party in the election.
 
 ```{r}
-setwd("C:/USers/Zohaib/Desktop/Lectures/Udacity/R") #Setting the correct working directory.
-Contributions<-read.csv("ContributionsEdited.csv",header = TRUE,na.strings="",encoding="UTF-8") #Reading in the data.
+setwd("C:/USers/Zohaib/Desktop/Lectures/Udacity/R") 
+#Setting the correct working directory.
+Contributions<-read.csv("ContributionsEdited.csv",header = TRUE,na.strings="",
+                        encoding="UTF-8") #Reading in the data.
 ```
 
 
@@ -25,11 +27,14 @@ library(dplyr)
 ```
 
 ```{r}
-for (i in c("cand_nm","election_tp")){print(sort(table(Contributions[i]),decreasing=TRUE))} # Gives table counts for 
-                                                                                            # each candidate and 
-                                                                                            # election.
-Contributions$names<-lapply(as.character(Contributions$cand_nm),function(x) strsplit(x,",")[[1]][1]) 
-Contributions$names<-factor(Contributions$names,levels=sort(as.vector(as.character(unique((Contributions$names)))))) #Creates and easier to use name variable, with just last names.
+for (i in c("cand_nm","election_tp")){print(sort(table(Contributions[i]),
+                                                 decreasing=TRUE))}
+# Gives table counts for each candidate and election.
+Contributions$names<-lapply(as.character(Contributions$cand_nm),
+                            function(x) strsplit(x,",")[[1]][1]) 
+Contributions$names<-factor(Contributions$names,levels=sort(
+  as.vector(as.character(unique((Contributions$names)))))) 
+#Creates and easier to use name variable, with just last names.
 ```
 As expected, the most number of the contributions are going to the popular choice, Clinton, the fundraising upset Sanders, and election winner Trump. For the rest of the individuals, one can get a sense of how the election turned out just by looking at the differing number of contributions.  
 
@@ -64,7 +69,7 @@ ggplot(aes(x=contbr_city,y=contb_receipt_amt), #Two plots trying to create scatt
        data=plotCont)+                         #receipt amounts, but this obviously does not seem like the best plots.
   geom_point(stat="summary",fun.y=mean)
 ```
-These plots do not really say anything, and it is near impossible to do anything worth-while with them.
+In an attempt to determine some information from occupation of the contributors and cities, I plot these variables against the mean contribution amount for them but these plots do not really say anything, and it is near impossible to do anything worth-while with them.
 
 ```{r,eval=FALSE}
 Contributions$Gender<-NA
@@ -77,8 +82,9 @@ Republicans=c("Rubio","Santorum","Perry","Carson","Cruz","Fiorina","Paul","Hucka
               "Pataki","O'Malley","Graham","Bush","Trump","Jindal","Christie",
               "Walker","Kasich","Gilmore")
 Democrats=c("Clinton","Sanders","Webb","Lessig")
-Others=c("Stein","Johnson","McMullin")    #Creating Gender and Party variables based off of a list of the names that 
-                                          #fall in each category.
+Others=c("Stein","Johnson","McMullin")    
+#Creating Gender and Party variables based off of a list of the names that 
+#fall in each category.
 for (i in Contributions$names){
   if (i %in% Males) {
     Contributions$Gender="M"
@@ -105,27 +111,36 @@ for (i in Contributions$names){
 
 ```{r}
 for (i in unique(Contributions$gender)){
-  print(c(i,quantile(x=Contributions[Contributions$gender==i,]$contb_receipt_amt,probs = .85)))
+  print(c(i,quantile(x=Contributions[
+    Contributions$gender==i,]$contb_receipt_amt,probs = .85)))
   } #calculates 85th percentile for contributions by gender.
 for (i in unique(Contributions$party)){
-  print(c(i,quantile(Contributions[Contributions$party==i,]$contb_receipt_amt,probs = .85)))
+  print(c(i,quantile(Contributions[
+    Contributions$party==i,]$contb_receipt_amt,probs = .85)))
 } #calculates 85th percentile for contributions by party.
 ```
 This data is just to get a sense of the data for the following plots, which need scaling manipulations.
 ```{r}
 ggplot(aes(x=gender,y=contb_receipt_amt),data=plotCont)+
   geom_boxplot(aes(alpha=.1))+
-  coord_cartesian(ylim=c(quantile(Contributions[Contributions$gender=="F",]$contb_receipt_amt,probs = .25),
-                         quantile(Contributions[Contributions$gender=="F",]$contb_receipt_amt,probs = .95)))+
+  coord_cartesian(ylim=c(quantile(Contributions[
+    Contributions$gender=="F",]$contb_receipt_amt,probs = .25),
+                         quantile(Contributions[
+                           Contributions$gender=="F",]$contb_receipt_amt,
+                           probs = .95)))+
   guides(fill=FALSE)
 ggplot(aes(x=party,y=contb_receipt_amt),data=plotCont)+
   geom_boxplot(aes(alpha=.1))+
-  coord_cartesian(ylim=c(quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.25),
-                         quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.95)))+
+  coord_cartesian(ylim=c(quantile(
+    Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.25),
+                         quantile(
+                           Contributions[
+                             Contributions$party=="R",]$contb_receipt_amt,
+                           probs=.95)))+
   guides(fill=FALSE) #plotting boxplots for both contributions by gender and party with the 25th and 95th percentiles
                      #used to give a better picture of the plots.
 ```                  
-Here differences between gender and party are shown in terms of contributions, although, oddly the "Other" party types have a higher median amount of contributions when compared to Republicans and Democrats, although both of the latter have very high outliers throughout the plots. This is probably due to the lower count of contributions that was donated to the Other parties.
+In order to view differences across party and gender I create boxplots for them, one of the best ways to visually check. Here differences between gender and party are shown in terms of contributions, although, oddly the "Other" party types have a higher median amount of contributions when compared to Republicans and Democrats, although both of the latter have very high outliers throughout the plots. This is probably due to the lower count of contributions that was donated to the Other parties.
 
 ```{r}
 namelist<-unique(Contributions$names)
@@ -142,16 +157,19 @@ for (i in namelist){
 I feel this is an extremely informative presentation of the data, as one can determine the top cities where each candidate received funds from. This information is highly valuable.Looking at just Clinton, she got the most from New York, D.C., and Los Angeles, Trump from HOuston, Dallas and Nevada (southern states) and Sanders from New York, Seattle, and Los Angeles.
 ```{r,message=FALSE,warning=FALSE}
 for (i in namelist){a<-get(i)
-                 a$location<-paste(as.character(a$city),as.character(a$contbr_city))
+                 a$location<-paste(as.character(a$city),as.character(
+                   a$contbr_city))
                  a$lat<- sapply(a$location,                          #Getting the longitude and latitude for each
                                         function(x)                  #candidate.               
                                           if (!is.na(x)){
-                                            geocode(x,source ="dsk",messaging = FALSE)$lat}
+                                            geocode(x,source ="dsk",
+                                                    messaging = FALSE)$lat}
                                         else {NA})
                  a$lon<- sapply(a$location,
                                        function(x) 
                                          if (!is.na(x)){
-                                           geocode(x,source ="dsk",messaging = FALSE)$lon}
+                                           geocode(x,source ="dsk",
+                                                   messaging = FALSE)$lon}
                                        else {NA})
                  assign(i,a) #Assigning the new information to the candidate dataframes.
                  remove(a)
@@ -160,14 +178,21 @@ for (i in namelist){a<-get(i)
 
 ```{r}
 for (i in namelist){
-  map("world", fill=TRUE, col="white", bg="lightblue", ylim=c(-60, 90), mar=c(0,0,0,0))
-  points(x=get(i)$lon,y=get(i)$lat,col="red")} #Plotting each candidate dataframe by city.
+  map("world", fill=TRUE, col="white", bg="lightblue", ylim=c(-60, 90), 
+      mar=c(0,0,0,0))
+  points(x=get(i)$lon,y=get(i)$lat,col="red")
+  title(main=paste(i," Contributions"))} 
+#Plotting each candidate dataframe by city.
 ```
-This visualization of contributions by city looks fine, but I believe this can be done in a somewhat more aesthetically pleasing way.
-```{r,warning=FALSE,fig.width=15}
+This visualization of contributions by city looks fine, but I believe this can be done in a somewhat more aesthetically pleasing way. In these first two attempts all candidate maps are displayed, just to allow for any viewer to be able to view the information for any candidate, as well as notice some of the striking differences such as Rubio
+getting quite a few donations from Europe.
+```{r,warning=FALSE}
 for (i in namelist){
   print(ggplot()+borders("world",colour="gray50",fill="gray50")+
-          geom_point(data=get(i),mapping=aes(x=lon,y=lat),col='blue') #using borders and ggplot to plot the data.
+          geom_point(data=get(i),mapping=aes(x=lon,y=lat),
+                     col='blue')+
+          ggtitle(paste(i," Contributions"))
+        #using borders and ggplot to plot the data.
         )
 }
 ```
@@ -188,13 +213,13 @@ for (i in namelist){
 ```
 
 ```{r,warning=FALSE,fig.width=15}
-for (i in namelist){
+for (i in c("Clinton","Sanders","Trump")){
   print(ggplot(aes(x=lon,y=lat),data=get(i))+borders("world",colour="gray50",fill="gray50")+
     geom_point(alpha=.75,aes(col=get(i)$n,size=get(i)$sum_of_cont/1000))+
       scale_color_gradient2(low = "red", mid = "white", high = "blue")) #Redoing the maps with size and color affected
 }                                                                       #by sum and count.
 ```
-These plots definitely look a lot better and contain a lot more information!
+These plots definitely look a lot better and contain a lot more information, and I restrict the maps to only the main candidates!
 
 #Final Visualizations
 
@@ -220,7 +245,7 @@ p2<-ggplot(aes(x=names,y=contb_receipt_amt/1000000,group=1),
   geom_line(size=1.25,color='steelblue',stat="summary",fun.y=sum)+
   theme(plot.title = element_text(hjust=.5,size=22),axis.title.x=element_blank(),
         axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=15),
+        axis.text.y = element_text(size=13),
         axis.title=element_text(size=15),
         strip.text = element_text(size=15))+
   facet_wrap(~election_tp,nrow=2)+
@@ -230,27 +255,30 @@ grid.arrange(p2,p1)
 
 The next plot I chose, as it is the next level of abstraction, shows the differences across parties.
 
-```{r}
+```{r,message=FALSE,warning=FALSE}
 ggplot(aes(x=party,y=contb_receipt_amt),data=plotCont)+
   geom_boxplot(aes(alpha=.1))+
   xlab("Party")+ylab("Contribution Amount")+ggtitle("Contributions by Party")+
   theme(plot.title = element_text(hjust=.5,size=22),
         axis.title = element_text(size=15),
-        axis.text = element_text(size=13)
-        )+
-  coord_cartesian(ylim=c(quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.25),
-                         quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.95)))+
-  guides(fill=FALSE) #plotting boxplots for both contributions by gender and party with the 25th and 95th percentiles
-                     #used to give a better picture of the plots.
+        axis.text = element_text(size=13),
+        legend.position = "none")+
+  #coord_cartesian(ylim=c(quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.25),
+  #                       quantile(Contributions[Contributions$party=="R",]$contb_receipt_amt,probs=.95)))+
+  scale_y_log10() 
+#plotting boxplots for both contributions by gender and party with the 25th 
+#and 95th percentiles used to give a better picture of the plots.
 ```     
 Finally, the map visualization, for the main candidates is a worthwhile display of the data and the differences across these candidates:
-```{r,warning=FALSE,fig.width=15}
+```{r,warning=FALSE,fig.width=10}
 #Redoing the maps with size and color affected by sum and count.
 for (i in c("Clinton","Sanders","Trump")){
-  print(ggplot(aes(x=lon,y=lat),data=get(i))+borders("world",colour="gray50",fill="gray50")+
+  print(ggplot(aes(x=lon,y=lat),data=get(i))+borders("world",colour="gray50",
+                                                     fill="gray50")+
     geom_point(aes(col=get(i)$n,size=get(i)$sum_of_cont/1000))+
       scale_color_gradient2(low="red",mid="orange",high="yellow")+
-    ggtitle(paste(i," Contributions"))+theme(axis.title = element_text(size=15),
+    ggtitle(paste(i," Contributions"))+theme(axis.title = 
+                                               element_text(size=15),
                      axis.text = element_text(size=15),
                      plot.title = element_text(hjust=.5,size=22),
                      legend.title = element_text(size=12)
@@ -263,5 +291,7 @@ All three candidates seem to have similar locations contributing to them. Sander
 Results:
 
 According to the visualizations, even though Sander's campaign was deemed very popular, and was self-financing without the helps of PACs, other candidates still did much better than him in terms of donations! Furthermore, even lesser known, and barely in the race candidates, like Lessig, received high mean and median contributions-- higer than Trump, Sanders or Clinton which suggests that these candidates (though probably did get just as high donations as the other candidates) received a majority of low amount donations. Finally, it seems the three main candidates got donations from across the globe, yet, again, it seems Trump, due to his world-wide fame garnered even more (count-wise), something not many people expected at all. 
+
+One struggle I had while creating this was figuring out to display the city data, especially because of the large number of observations. In terms of coding this was solved by parsing the data rather than iterating over it, and visually solved by mapping mean, count and sum values. On the other hand, I also struggled with the data for occupation, which I feel is really valuable data, but much more-so difficult to make a visualization for. A possible visualization could just be a table, much like the ones created for cities, that contains the top ten occupations by candidate!
 
 For improvements and further research, I would suggest attemping to do this for local elections, and then determining whether contributions actually affect winning rates (for Which the data here suggests they do not).
